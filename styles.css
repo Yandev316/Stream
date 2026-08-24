@@ -92,6 +92,14 @@ button, input {
   backdrop-filter: blur(18px);
 }
 
+.app-shell.room-active {
+  grid-template-columns: 1fr;
+}
+
+.app-shell.room-active .lobby-panel {
+  display: none;
+}
+
 .panel {
   padding: 36px 28px;
 }

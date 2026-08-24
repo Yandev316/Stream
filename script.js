@@ -1,4 +1,6 @@
 const lobbyForm = document.getElementById("lobbyForm");
+const lobbyPanel = document.getElementById("lobbyPanel");
+const appShell = document.querySelector(".app-shell");
 const userNameInput = document.getElementById("userName");
 const roomCodeInput = document.getElementById("roomCodeInput");
 const joinRoomField = document.getElementById("joinRoomField");
@@ -178,6 +180,9 @@ function activateRoom(mode, roomCode) {
   appState.roomCode = roomCode;
   appState.userName = userNameInput.value.trim() || "Visitante";
 
+  appShell.classList.add("room-active");
+  lobbyPanel.classList.add("hidden");
+
   roomCodeLabel.textContent = roomCode;
   userStatus.textContent = mode === "host" ? "Host" : "Cliente";
   roomTitle.textContent = mode === "host" ? `Sala de ${appState.userName}` : `Acompanhando ${roomCode}`;
@@ -206,6 +211,9 @@ function resetRoom() {
   appState.roomCode = "";
   appState.stream = null;
   appState.viewerWindow = null;
+
+  appShell.classList.remove("room-active");
+  lobbyPanel.classList.remove("hidden");
 
   if (screenVideo.srcObject) {
     screenVideo.srcObject.getTracks().forEach((track) => track.stop());
