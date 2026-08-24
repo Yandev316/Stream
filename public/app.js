@@ -147,6 +147,10 @@ function resetRoom() {
 }
 
 function createPeerConnection(peerId) {
+  if (appState.myPeerConnections[peerId]) {
+    return appState.myPeerConnections[peerId];
+  }
+
   const pc = new RTCPeerConnection({
     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
   });
@@ -154,7 +158,11 @@ function createPeerConnection(peerId) {
   appState.myPeerConnections[peerId] = pc;
 
   if (appState.stream) {
-    appState.stream.getTracks().forEach((track) => pc.addTrack(track, appState.stream));
+    appState.stream.getTracks().forEach((track) => {
+      if (!pc.getSenders().some((sender) => sender.track && sender.track.id === track.id)) {
+        pc.addTrack(track, appState.stream);
+      }
+    });
   }
 
   pc.onicecandidate = (event) => {
@@ -167,31 +175,14 @@ function createPeerConnection(peerId) {
     }
   };
 
-  pc.onnegotiationneeded = async () => {
-    if (appState.role !== 'host') return;
-
-    try {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit('offer', {
-        roomCode: appState.roomCode,
-        offer,
-        receiverId: peerId
-      });
-    } catch (error) {
-      console.error('Erro no offer:', error);
-    }
-  };
-
   return pc;
 }
 
-async function sendOfferToPeer(peerId, pc) {
-  if (appState.role !== 'host' || !appState.stream) return;
+async function sendOfferToPeer(peerId, pc = appState.myPeerConnections[peerId]) {
+  if (appState.role !== 'host' || !appState.stream || !pc) return;
 
-  const existingTracks = pc.getSenders().map((sender) => sender.track?.id);
   appState.stream.getTracks().forEach((track) => {
-    if (!existingTracks.includes(track.id)) {
+    if (!pc.getSenders().some((sender) => sender.track && sender.track.id === track.id)) {
       pc.addTrack(track, appState.stream);
     }
   });
@@ -282,21 +273,11 @@ socket.on('room-state', ({ roomCode, members, hostName }) => {
   if (appState.role === 'host') {
     const viewers = members.filter((member) => member.role === 'viewer' && member.id !== socket.id);
     viewers.forEach((viewer) => {
-      if (!appState.myPeerConnections[viewer.id]) {
-        createPeerConnection(viewer.id);
+      const pc = createPeerConnection(viewer.id);
+      if (appState.stream) {
+        sendOfferToPeer(viewer.id, pc);
       }
     });
-
-    if (appState.stream) {
-      Object.entries(appState.myPeerConnections).forEach(([peerId, pc]) => {
-        const existingTracks = pc.getSenders().map((sender) => sender.track?.id);
-        appState.stream.getTracks().forEach((track) => {
-          if (!existingTracks.includes(track.id)) {
-            pc.addTrack(track, appState.stream);
-          }
-        });
-      });
-    }
   }
 });
 
@@ -321,41 +302,48 @@ socket.on('room-closed', () => {
 socket.on('offer', async ({ offer, senderId }) => {
   if (appState.role !== 'viewer') return;
 
-  const pc = new RTCPeerConnection({
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-  });
+  let pc = appState.remoteVideoPeers[senderId];
+  if (!pc) {
+    pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
 
-  appState.remoteVideoPeers[senderId] = pc;
+    appState.remoteVideoPeers[senderId] = pc;
 
-  pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      socket.emit('ice-candidate', {
-        roomCode: appState.roomCode,
-        receiverId: senderId,
-        candidate: event.candidate
-      });
-    }
-  };
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('ice-candidate', {
+          roomCode: appState.roomCode,
+          receiverId: senderId,
+          candidate: event.candidate
+        });
+      }
+    };
 
-  pc.ontrack = (event) => {
-    const stream = event.streams[0];
-    if (stream) {
-      screenVideo.srcObject = stream;
-      screenVideo.style.display = 'block';
-      screenPlaceholder.classList.add('hidden');
-      screenMessage.textContent = 'Assistindo em tempo real.';
-    }
-  };
+    pc.ontrack = (event) => {
+      const stream = event.streams[0];
+      if (stream) {
+        screenVideo.srcObject = stream;
+        screenVideo.style.display = 'block';
+        screenPlaceholder.classList.add('hidden');
+        screenMessage.textContent = 'Assistindo em tempo real.';
+      }
+    };
+  }
 
-  await pc.setRemoteDescription(new RTCSessionDescription(offer));
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
+  try {
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
 
-  socket.emit('answer', {
-    roomCode: appState.roomCode,
-    answer,
-    receiverId: senderId
-  });
+    socket.emit('answer', {
+      roomCode: appState.roomCode,
+      answer,
+      receiverId: senderId
+    });
+  } catch (error) {
+    console.error('Erro ao responder offer do host:', error);
+  }
 });
 
 socket.on('answer', async ({ answer, senderId }) => {
@@ -370,7 +358,7 @@ socket.on('ice-candidate', async ({ candidate, senderId }) => {
     ? appState.myPeerConnections[senderId]
     : appState.remoteVideoPeers[senderId];
 
-  if (!pc || !candidate) return;
+  if (!pc || !candidate || pc.signalingState === 'closed') return;
   try {
     await pc.addIceCandidate(new RTCIceCandidate(candidate));
   } catch (error) {
