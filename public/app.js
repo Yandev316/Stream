@@ -168,6 +168,8 @@ function createPeerConnection(peerId) {
   };
 
   pc.onnegotiationneeded = async () => {
+    if (appState.role !== 'host') return;
+
     try {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -182,6 +184,29 @@ function createPeerConnection(peerId) {
   };
 
   return pc;
+}
+
+async function sendOfferToPeer(peerId, pc) {
+  if (appState.role !== 'host' || !appState.stream) return;
+
+  const existingTracks = pc.getSenders().map((sender) => sender.track?.id);
+  appState.stream.getTracks().forEach((track) => {
+    if (!existingTracks.includes(track.id)) {
+      pc.addTrack(track, appState.stream);
+    }
+  });
+
+  try {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socket.emit('offer', {
+      roomCode: appState.roomCode,
+      offer,
+      receiverId: peerId
+    });
+  } catch (error) {
+    console.error('Erro ao negociar stream para viewer:', error);
+  }
 }
 
 async function startScreenShare() {
@@ -205,14 +230,10 @@ async function startScreenShare() {
     updateTransmissionControls();
 
     if (appState.role === 'host') {
-      const currentMembers = socket.data?.members || [];
-      currentMembers
-        .filter((member) => member.role === 'viewer')
-        .forEach((member) => {
-          if (!appState.myPeerConnections[member.id]) {
-            createPeerConnection(member.id);
-          }
-        });
+      const viewerIds = Object.keys(appState.myPeerConnections);
+      for (const peerId of viewerIds) {
+        await sendOfferToPeer(peerId, appState.myPeerConnections[peerId]);
+      }
     }
 
     stream.getVideoTracks()[0].addEventListener('ended', () => {
@@ -265,6 +286,17 @@ socket.on('room-state', ({ roomCode, members, hostName }) => {
         createPeerConnection(viewer.id);
       }
     });
+
+    if (appState.stream) {
+      Object.entries(appState.myPeerConnections).forEach(([peerId, pc]) => {
+        const existingTracks = pc.getSenders().map((sender) => sender.track?.id);
+        appState.stream.getTracks().forEach((track) => {
+          if (!existingTracks.includes(track.id)) {
+            pc.addTrack(track, appState.stream);
+          }
+        });
+      });
+    }
   }
 });
 
