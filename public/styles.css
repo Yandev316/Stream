@@ -462,4 +462,47 @@ input:focus {
   .room-header { margin-top: 58px; flex-direction: column; align-items: flex-start; }
   .stage-actions { flex-direction: column; }
   .room-content { grid-template-columns: 1fr; }
+  .share-stage { min-height: 420px; }
+}
+
+@media (max-width: 720px) {
+  .panel { padding: 22px 18px; }
+  .app-shell, .app-shell.room-active { height: auto; min-height: 100vh; }
+  .lobby-panel { padding-top: 60px; }
+  .brand { font-size: 0.68rem; }
+  h1 { font-size: clamp(1.8rem, 8vw, 2.4rem); }
+  .role-toggle { grid-template-columns: 1fr; }
+  .room-content { gap: 12px; }
+  .room-header { margin-top: 58px; gap: 12px; }
+  .room-header h2 { font-size: 1.5rem; }
+  .share-stage { min-height: 300px; border-radius: 18px; }
+  .online-panel { padding: 14px 12px; }
+  .online-item { padding: 10px; }
+  .user-name { max-width: 120px; }
+  .stage-actions { width: 100%; }
+  .stage-actions > * { width: 100%; }
+  .theme-btn { width: 42px; height: 42px; top: 12px; right: 12px; }
+  .theme-menu { top: 62px; right: 12px; }
+}
+
+@media (max-width: 480px) {
+  .panel { padding: 18px 14px; }
+  .lobby-form { gap: 12px; }
+  .primary-btn,
+  .secondary-btn,
+  .ghost-btn,
+  .danger-btn {
+    padding: 13px 14px;
+    font-size: 0.96rem;
+  }
+  .room-code-pill {
+    position: static;
+    width: fit-content;
+    margin-bottom: 4px;
+  }
+  .room-header { margin-top: 18px; }
+  .share-stage { min-height: 240px; }
+  .placeholder-icon { font-size: 3rem; }
+  .online-header h3 { font-size: 0.82rem; }
+  .user-name { max-width: 90px; }
 }
