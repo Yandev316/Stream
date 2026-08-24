@@ -13,6 +13,7 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0';
 const rooms = new Map();
 
 function getMembers(roomCode) {
@@ -181,6 +182,7 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`Servidor rodando em http://${HOST}:${PORT}`);
+  console.log(`Acesso local: http://localhost:${PORT}`);
 });
