@@ -21,39 +21,49 @@
       </div>
 
       <aside id="lobbyPanel" class="panel lobby-panel">
-        <div class="brand">
-          <span class="brand-mark">◉</span>
-          <span>Live Studio</span>
+        <div class="brand-wrap">
+          <div class="brand">
+            <span class="brand-mark">◉</span>
+            <span>Live Studio</span>
+          </div>
         </div>
 
-        <h1>Transmitir e acompanhar em uma sala</h1>
+        <div class="hero-copy">
+          <p class="eyebrow">Streaming moderno</p>
+          <h1>Crie uma sala e compartilhe ao vivo.</h1>
+          <p class="subtitle">Conecte seus convidados em poucos segundos com uma experiência limpa e profissional.</p>
+        </div>
 
         <form id="lobbyForm" class="lobby-form">
-          <label for="userName">Seu nome</label>
-          <input
-            id="userName"
-            name="userName"
-            type="text"
-            maxlength="24"
-            placeholder="Digite seu nome"
-            autocomplete="off"
-          />
+          <div class="input-group">
+            <label for="userName">Seu nome</label>
+            <input
+              id="userName"
+              name="userName"
+              type="text"
+              maxlength="24"
+              placeholder="Digite seu nome"
+              autocomplete="off"
+            />
+          </div>
 
           <div class="role-toggle" aria-label="Escolha da ação">
             <button type="button" class="role-btn active" data-role="host">Criar sala</button>
-            <button type="button" class="role-btn" data-role="viewer">Entrar em uma</button>
+            <button type="button" class="role-btn" data-role="viewer">Entrar em uma sala</button>
           </div>
 
           <div id="joinRoomField" class="field hidden">
-            <label for="roomCodeInput">Código da sala</label>
-            <input
-              id="roomCodeInput"
-              name="roomCodeInput"
-              type="text"
-              maxlength="8"
-              placeholder="Ex.: A7C9D2"
-              autocomplete="off"
-            />
+            <div class="input-group">
+              <label for="roomCodeInput">Código da sala</label>
+              <input
+                id="roomCodeInput"
+                name="roomCodeInput"
+                type="text"
+                maxlength="8"
+                placeholder="Ex.: A7C9D2"
+                autocomplete="off"
+              />
+            </div>
           </div>
 
           <button type="submit" class="primary-btn">Entrar na sala</button>
@@ -71,7 +81,10 @@
                 <h2 id="roomTitle">Sala de transmissão</h2>
               </div>
 
-              <button id="leaveRoomBtn" class="ghost-btn" type="button">Sair da sala</button>
+              <div class="room-header-actions">
+                <button id="copyRoomCodeBtn" class="secondary-btn copy-btn" type="button">Copiar código</button>
+                <button id="leaveRoomBtn" class="ghost-btn" type="button">Sair da sala</button>
+              </div>
             </div>
 
             <div class="share-stage">
@@ -80,6 +93,10 @@
                 <p id="screenMessage">Aguardando compartilhamento da tela...</p>
               </div>
 
+              <button id="miniFullScreenBtn" class="mini-fullscreen-btn hidden" type="button" aria-label="Expandir transmissão para tela cheia">
+                ⤢
+              </button>
+
               <video id="screenVideo" autoplay playsinline muted></video>
             </div>
 
@@ -87,7 +104,6 @@
               <button id="shareScreenBtn" class="primary-btn" type="button">Compartilhar tela</button>
               <button id="fullScreenBtn" class="secondary-btn hidden" type="button">Tela cheia</button>
               <button id="stopShareBtn" class="danger-btn hidden" type="button">Parar transmissão</button>
-              <button id="leaveRoomBtnSecondary" class="secondary-btn" type="button">Sair da sala</button>
             </div>
           </div>
 
@@ -101,6 +117,8 @@
         </div>
       </main>
     </div>
+
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
     <script src="script.js"></script>
   </body>
